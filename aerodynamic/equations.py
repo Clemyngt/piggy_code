@@ -4,12 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from matplotlib.patches import Circle
+from matplotlib import ticker, cm
 
 
 G = 6.67e-11
 B = 1
 
-planet = "mars"
+planet = "earth"
 
 planets = {
 	'earth':{
@@ -18,7 +19,7 @@ planets = {
 		'M': 5.97e24,
 		'rho0': 1.39,
 		'hs': 7.9e3,
-		'color':'blue'
+		'color':'#1f77b4'
 	},
 	'mars':{
 		'name': 'Mars',
@@ -26,7 +27,7 @@ planets = {
 		'M': 5.97e24,
 		'rho0': 1.39,
 		'hs': 7.9e3,
-		'color':'#ff5000'
+		'color':'#e5a77f'
 	},
 	'venus':{
 		'name': 'Venus',
@@ -90,16 +91,30 @@ if __name__ == "__main__":
 	h = r-R;
 	v = np.hypot(vr, vtheta*r)
 	
+	# plot limits
+	border = 400e3
+	xlim = [np.min(x)-border, np.max(x)+border]
+	ylim = [np.min(y)-border, np.max(y)+border]
+	
+	# the atmosphere
+	xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], 1000), np.linspace(ylim[0], ylim[1], 1000))
+	rr = np.hypot(xx, yy)
+	zz = np.where(rr < R+1e3, 0, rho(rr))
+	
+	#locator.nonsingular(1e-10, 1)
+	plt.contourf(xx, yy, zz, locator=ticker.LogLocator(numticks=200), cmap='gray', vmin=1e-50)
+	cbar = plt.colorbar()
+	cbar.set_label('atmospheric density ($kg.m^{-3}$)', rotation=270)
 	
 	# draw the planet
-	plt.gca().add_patch(Circle((0, 0), R, color=planets[planet]['color'], alpha=0.5))
+	plt.gca().add_patch(Circle((0, 0), R, color=planets[planet]['color']))
 	
 	# draw the trajectory
 	plt.scatter(x, y, c=t, label='trajectory', cmap='copper', s=0.5)
 	#plt.plot(t, r, 'g', label='r(t)')
 	plt.legend()
-	plt.ylabel('y')
-	plt.xlabel('x')
+	plt.xlim(xlim)
+	plt.ylim(ylim)
 	#plt.grid()
 	plt.title("Trajectory in the atmosphere of "+planets[planet]['name'])
 	
