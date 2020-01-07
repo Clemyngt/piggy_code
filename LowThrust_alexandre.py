@@ -16,14 +16,14 @@ algo = algo_factory("slsqp")
 
 udp = add_gradient(pk.trajopt.direct_pl2pl(
         p0="earth",
-        pf="mars",
+        pf="venus",
         mass=300,
         thrust=0.1,
         isp=3000,
         vinf_arr=0,#1e-6,
         vinf_dep=0,#3.5,
         hf=False,
-        nseg=5,
+        nseg=50,
         t0=[7300, 9125],
         tof=[100, 500]),
         with_grad=True
