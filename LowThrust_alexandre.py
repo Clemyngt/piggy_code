@@ -58,7 +58,7 @@ plt.title("position (A.U.)")
 
 
 plt.subplot(223)
-plt.plot(traj[:,0], traj[:,5:8])
+plt.plot(traj[:,0], traj[:,4:7])
 plt.xlabel("time (d)")
 plt.ylabel("speed (m/s)")
 plt.legend(["$V_x$", "$V_y$", "$V_z$"])
