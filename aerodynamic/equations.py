@@ -10,7 +10,7 @@ from matplotlib import ticker, cm
 G = 6.67e-11
 B = 1
 
-planet = "earth"
+planet = "mars"
 
 planets = {
 	'earth':{
@@ -23,19 +23,19 @@ planets = {
 	},
 	'mars':{
 		'name': 'Mars',
-		'R': 6371e3,
-		'M': 5.97e24,
+		'R': 3389e3,
+		'M': 6.39e23,
 		'rho0': 1.39,
 		'hs': 7.9e3,
 		'color':'#e5a77f'
 	},
 	'venus':{
 		'name': 'Venus',
-		'R': 6371e3,
-		'M': 5.97e24,
+		'R': 6051e3,
+		'M': 4.87e24,
 		'rho0': 1.39,
 		'hs': 7.9e3,
-		'color':'#fff000'
+		'color':'#aaaaaa'
 	}
 }
 	
@@ -60,36 +60,49 @@ def equations(y, t):
 	atheta = -2*vr*vtheta / r - drag*vtheta
 	
 	if r < R:
-		return [0, 0, 0, 0]
+		return [ar, 0, atheta, 0] # on ne bouge plus
 		
 	dydt = [ar, vr, atheta, vtheta]
 	return dydt
 
-if __name__ == "__main__":
-	from scipy.integrate import odeint
+
+def initial(i, N_curves):
 	
-	x0 = R+350e3
-	y0 = 0
+	x0 = R+650e3
+	y0 = R+350e3
 	vx0 = 0
-	vy0 = -7.645e3
+	vy0 = np.linspace(-5.18e3, -5.15e3, N_curves)[i]
 	
 	r0 = np.hypot(x0, y0)
 	theta0 = np.arctan2(y0, x0)
 	vr0 = (x0*vx0+y0*vy0)/r0
 	vtheta0 = (x0*vy0 - y0*vx0)/(r0*r0)
 	
+	return [vr0, r0, vtheta0, theta0]
+
+
 	
-	y0 = [vr0, r0, vtheta0, theta0]
-	t = np.linspace(0, 20000, 10000)
+if __name__ == "__main__":
+	from scipy.integrate import odeint
 	
-	sol = odeint(equations, y0, t)
+	N_curves = 10;
+	N_time = 1000;
 	
-	vr, r, vtheta, theta = sol.T
-	x = r*np.cos(theta)
-	y = r*np.sin(theta)
 	
-	h = r-R;
-	v = np.hypot(vr, vtheta*r)
+	t = np.linspace(0, 20000, N_time)
+	
+	x, y, h, v = np.zeros((4, N_time, N_curves))
+	
+	for i in range(N_curves):
+		sol = odeint(equations, initial(i, N_curves), t)
+	
+		vr, r, vtheta, theta = sol.T
+		
+		x[:,i] = r*np.cos(theta)
+		y[:,i] = r*np.sin(theta)
+		
+		h[:,i] = r-R;
+		v[:,i] = np.hypot(vr, vtheta*r)
 	
 	# plot limits
 	border = 400e3
@@ -97,46 +110,47 @@ if __name__ == "__main__":
 	ylim = [np.min(y)-border, np.max(y)+border]
 	
 	# the atmosphere
+	vmin = 1e-50
 	xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], 1000), np.linspace(ylim[0], ylim[1], 1000))
 	rr = np.hypot(xx, yy)
 	zz = np.where(rr < R+1e3, 0, rho(rr))
+	zz = np.where(zz < vmin, vmin, zz)
 	
-	#locator.nonsingular(1e-10, 1)
-	plt.contourf(xx, yy, zz, locator=ticker.LogLocator(numticks=200), cmap='gray', vmin=1e-50)
+	plt.contourf(xx, yy, zz, locator=ticker.LogLocator(numticks=200), cmap='gray', vmin=vmin)
 	cbar = plt.colorbar()
 	cbar.set_label('atmospheric density ($kg.m^{-3}$)', rotation=270)
 	
-	# draw the planet
-	plt.gca().add_patch(Circle((0, 0), R, color=planets[planet]['color']))
-	
-	# draw the trajectory
-	plt.scatter(x, y, c=t, label='trajectory', cmap='copper', s=0.5)
+	# draw the trajectories
+	plt.plot(x, y, '.-', markersize=4, alpha=0.5)
 	#plt.plot(t, r, 'g', label='r(t)')
-	plt.legend()
+	#plt.legend()
 	plt.xlim(xlim)
 	plt.ylim(ylim)
 	#plt.grid()
 	plt.title("Trajectory in the atmosphere of "+planets[planet]['name'])
+	
+	# draw the planet
+	plt.gca().add_patch(Circle((0, 0), R, color=planets[planet]['color']))
 	
 	plt.gca().set_aspect('equal')
 	
 	# draw the curves
 	filtre = h>=0
 	
-	fig, ax1 = plt.subplots()
+	#fig, ax1 = plt.subplots()
 	
-	color = 'tab:blue'
-	ax1.set_xlabel('time (s)')
-	ax1.set_ylabel('altitude (km)', color=color)
-	ax1.plot(t[filtre], h[filtre]/1000, color=color)
-	ax1.tick_params(axis='y', labelcolor=color)
+	#color = 'tab:blue'
+	#ax1.set_xlabel('time (s)')
+	#ax1.set_ylabel('altitude (km)', color=color)
+	#ax1.plot(t[filtre], h[filtre]/1000, color=color)
+	#ax1.tick_params(axis='y', labelcolor=color)
 
-	ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+	#ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-	color = 'tab:red'
-	ax2.set_ylabel('speed (km/s)', color=color)  # we already handled the x-label with ax1
-	ax2.plot(t[filtre], v[filtre]/1000, color=color)
-	ax2.tick_params(axis='y', labelcolor=color)
+	#color = 'tab:red'
+	#ax2.set_ylabel('speed (km/s)', color=color)  # we already handled the x-label with ax1
+	#ax2.plot(t[filtre], v[filtre]/1000, color=color)
+	#ax2.tick_params(axis='y', labelcolor=color)
 
-	fig.tight_layout()  # otherwise the right y-label is slightly clipped
+	#fig.tight_layout()  # otherwise the right y-label is slightly clipped
 	plt.show()
