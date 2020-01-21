@@ -21,6 +21,48 @@ import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
+engines = {
+	"NSTAR":{
+		"thrust":92,
+		"ISP":3300
+	},
+	"PPS-1350":{
+		"thrust":140,
+		"ISP":1800
+	},
+	"PPS-X00":{
+		"thrust":50,
+		"ISP":1450
+	},
+	"T5":{
+		"thrust":25,
+		"ISP":3000
+	},
+	"mu-10":{
+		"thrust":8,
+		"ISP":3000
+	},
+	"XIPS-25":{
+		"thrust":79,
+		"ISP":3400
+	},
+	"SPT-100":{
+		"thrust":80,
+		"ISP":1600
+	}
+	
+}
+
+
+
+
+
+engine = "NSTAR"
+
+
+
+thrust = engines[engine]["thrust"]*0.001	# Thrust [N]
+ISP = engines[engine]["ISP"]			# seconds
 
 """ Define the keplerian body """ 
 # with input (date,orbital_elements, mu_central_body, mu_self, radius, safe_radius [, name = ‘unknown’])
@@ -74,8 +116,8 @@ udp = add_gradient(pk.trajopt.direct_pl2pl(
         p0=pk.planet.jpl_lp('earth'),
         pf=asteroid,
         mass=150,
-        thrust=0.029,
-        isp=1700,
+        thrust=thrust,
+        isp=ISP,
         vinf_arr=1e-6,      #allowed maximal DV at arriv in [km/s]
         vinf_dep=12,          #allowed maximal DV at departure in [km/s]
         hf=False,           #(``bool``): High-fidelity. Activates a continuous representation for the thrust         
@@ -114,18 +156,12 @@ udp.udp_inner.plot_control(pop.champion_x)
 #t, x, y, z, vx, vy, vz, m, u, ux, uy, uz
 traj = udp.udp_inner.get_traj(pop.champion_x)
 
+plt.figure()
+udp.udp_inner.plot_traj(pop.champion_x)
 
+plt.figure()
+udp.udp_inner.plot_control(pop.champion_x)
 
-
-
-
-
-
-
-
-
-
-
-
-
+#t, x, y, z, vx, vy, vz, m, u, ux, uy, uz
+traj = udp.udp_inner.get_traj(pop.champion_x)
 
