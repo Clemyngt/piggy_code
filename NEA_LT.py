@@ -26,17 +26,17 @@ import matplotlib.pyplot as plt
 # with input (date,orbital_elements, mu_central_body, mu_self, radius, safe_radius [, name = ‘unknown’])
 # orbital_elements = (a,e,i,W,w,M )
 #(we need to modify the safe radius of the planets to match the wanted problem)
-asteroid = keplerian(epoch(2458600.5, "jd"), #MJD = JD - 2400000.5
-                                 [1.926 * AU,           #a
-                                  .474,                 #e
-                                  1.68 * DEG2RAD,       #i
-                                  285.38 * DEG2RAD,     #W
-                                  186.38 * DEG2RAD,     #w
-                                  163.82 * DEG2RAD],    #M
+asteroid = keplerian(epoch(58800.5, "mjd"), #MJD = JD - 2400000.5
+                                 [2.1573 * AU,           #a
+                                  0.543713,                 #e
+                                  0.897 * DEG2RAD,       #i
+                                  40.269 * DEG2RAD,     #W
+                                  155.568 * DEG2RAD,     #w
+                                  237.137 * DEG2RAD],    #M
                                  MU_SUN,    #mu_central_body
                                  0.,        #mu_self
-                                 0.490, 0.55, #radius, safe_radius : safe_radius must be greater than radius
-                                 "162998")  #body name
+                                 0., 0., #radius, safe_radius : safe_radius must be greater than radius km
+                                 "2008JL3")  #body name
 
 """ Define the UDP (User Defined Problem) """
 # Using continuous thrust w/o mga
@@ -73,15 +73,15 @@ asteroid = keplerian(epoch(2458600.5, "jd"), #MJD = JD - 2400000.5
 udp = add_gradient(pk.trajopt.direct_pl2pl(
         p0=pk.planet.jpl_lp('earth'),
         pf=asteroid,
-        mass=1000,
-        thrust=0.5,
-        isp=3000,
+        mass=150,
+        thrust=0.029,
+        isp=1700,
         vinf_arr=1e-6,      #allowed maximal DV at arriv in [km/s]
-        vinf_dep=5,          #allowed maximal DV at departure in [km/s]
+        vinf_dep=12,          #allowed maximal DV at departure in [km/s]
         hf=False,           #(``bool``): High-fidelity. Activates a continuous representation for the thrust         
         nseg=40,
-        t0=[pk.epoch(2459585,'jd').mjd2000, epoch(2462507,'jd').mjd2000],  #WARNING ! list of floats in mjd2000 
-        tof=[500,1000]),
+        t0=[pk.epoch(2459581,'jd').mjd2000, epoch(2461407,'jd').mjd2000],  #WARNING ! list of floats in mjd2000 
+        tof=[300,2000]),
         with_grad=True
     )
 prob = pg.problem(udp)
@@ -103,7 +103,16 @@ pop = algo.evolve(pop)
 
 print("Is feasible: ", prob.feasibility_f(pop.champion_f))
 
+udp.udp_inner.pretty(pop.champion_x)
 
+plt.figure()
+udp.udp_inner.plot_traj(pop.champion_x)
+
+plt.figure()
+udp.udp_inner.plot_control(pop.champion_x)
+
+#t, x, y, z, vx, vy, vz, m, u, ux, uy, uz
+traj = udp.udp_inner.get_traj(pop.champion_x)
 
 
 
