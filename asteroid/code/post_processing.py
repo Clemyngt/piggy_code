@@ -18,11 +18,15 @@ from pykep.planet import jpl_lp, keplerian
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+g0 = 9.80665
+
 """ Functions """
 
-def get_totalDV(z):
-    isp = 3000
-    return isp*9.81*np.log(z['m'][0]/z['m'][len(z)-1])
+def mass_tsiol(dv, isp, m_init):
+    return m_init*np.exp(-dv/isp/g0)
+
+def get_totalDV(z, isp):
+    return isp*g0*np.log(z['m'][0]/z['m'][len(z)-1])
 
 def plot_traj(z):
     plt.figure()
@@ -78,8 +82,8 @@ asteroid = keplerian(epoch(58800.5, "mjd"), #MJD = JD - 2400000.5
 
 """ Data reading """
 
-filename = 'champion2008jl3-150kg.csv'
-path = 'D:/Bureau/PIE/NEA_MissionPlan/2008JL3-300kg'
+filename = '150kg_traj.csv'
+path = 'D:/Utilisateurs/GitHub/piggy_code/asteroid/results/target_2008JL3/safranppsx00_isp1450_t75'
 path = os.path.join(path, filename)
 
 #t, x, y, z, vx, vy, vz, m, u, ux, uy, uz
@@ -89,7 +93,7 @@ kin = pd.read_csv(path,header=None,sep='\s+',names=['time','x','y','z','vx','vy'
 kin['v'] = [np.sqrt(kin['vx'][i]**2+kin['vy'][i]**2+kin['vz'][i]**2) for i in range(len(kin['vx']))]
 
 
-
+print(get_totalDV(kin, 1450))
 
 
 #pos_helio = np.array([kin['x'][0], kin['y'][0], kin['z'][0]])
