@@ -11,13 +11,18 @@ import os #path handling
 import numpy as np #import numpy drives sklearn to use numpy arrays instead of python lists
 import pandas as pd #CSV and dataframe handling
 
-from pykep import AU, DEG2RAD, MU_SUN, MU_EARTH, epoch
+from pykep import AU, DEG2RAD, MU_SUN, MU_EARTH, epoch, EARTH_RADIUS
 import pykep as pk
 from pykep.planet import jpl_lp, keplerian
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import spiceypy
 
+import NEA_database as db
+
+MU_MOON = 4902.7779 
+R_MOON = 1737.1e3
 g0 = 9.80665
 
 """ Functions """
@@ -66,24 +71,24 @@ def flyby_rel_speed(planet, kin):
     rel_vel[0,2] = kin['vz'][len(kin)-1]-vel_pl[2]
     return np.linalg.norm(rel_vel,axis=1)
 
+def rel_speed(planet, kin, iteration):
+    meeting_time = kin['time'][iteration]
+    print(meeting_time)
+    pos_pl, vel_pl = planet.eph(pk.epoch(meeting_time, 'mjd2000'))   #position, velocity
+    vel_pl = np.array(vel_pl)
+    print(vel_pl)
+    rel_vel = np.empty([1,3])
+    rel_vel[0,0] = kin['vx'][iteration]-vel_pl[0]
+    rel_vel[0,1] = kin['vy'][iteration]-vel_pl[1]
+    rel_vel[0,2] = kin['vz'][iteration]-vel_pl[2]
+    return np.linalg.norm(rel_vel,axis=1)
 
-asteroid = keplerian(epoch(58800.5, "mjd"), #MJD = JD - 2400000.5
-                                 [2.1573 * AU,           #a
-                                  0.543713,                 #e
-                                  0.897 * DEG2RAD,       #i
-                                  40.269 * DEG2RAD,     #W
-                                  155.568 * DEG2RAD,     #w
-                                  237.137 * DEG2RAD],    #M
-                                 MU_SUN,    #mu_central_body
-                                 0.,        #mu_self
-                                 0., 0., #radius, safe_radius : safe_radius must be greater than radius km
-                                 "2008JL3")  #body name
 
 
 """ Data reading """
 
-filename = '150kg_traj.csv'
-path = 'D:/Utilisateurs/GitHub/piggy_code/asteroid/results/target_2008JL3/safranppsx00_isp1450_t75'
+filename = '150kg_safran_traj.csv'
+path = 'D:/Utilisateurs/GitHub/piggy_code/asteroid/results/target_2011BT59/fromMoon'
 path = os.path.join(path, filename)
 
 #t, x, y, z, vx, vy, vz, m, u, ux, uy, uz
@@ -92,9 +97,17 @@ path = os.path.join(path, filename)
 kin = pd.read_csv(path,header=None,sep='\s+',names=['time','x','y','z','vx','vy','vz','m','T','Tx','Ty','Tz']) 
 kin['v'] = [np.sqrt(kin['vx'][i]**2+kin['vy'][i]**2+kin['vz'][i]**2) for i in range(len(kin['vx']))]
 
+#earth = pk.planet.jpl_lp('earth')
+pk.util.load_spice_kernel('de430.bsp')
+earth = pk.planet.spice('EARTH', 'SUN', 'ECLIPJ2000', 'NONE', MU_SUN, MU_EARTH, EARTH_RADIUS, EARTH_RADIUS * 1.05)
 
-print(get_totalDV(kin, 1450))
+print('total DV =', get_totalDV(kin, 3000), 'm/s')
 
+rel_earth = []
+for i in range(len(kin)):
+    time = kin['time'][i]
+    r,v = earth.eph(epoch(time,'mjd2000'))
+    rel_earth.append(np.abs(kin))
 
 #pos_helio = np.array([kin['x'][0], kin['y'][0], kin['z'][0]])
 #vel_helio = np.array([kin['vx'][0], kin['vy'][0], kin['vz'][0]])
